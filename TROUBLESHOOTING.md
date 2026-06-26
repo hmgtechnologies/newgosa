@@ -1,82 +1,73 @@
-# 🩺 Troubleshooting — God of Seed Academy
+# 🩺 TROUBLESHOOTING — School Connect Gen v8
 
-Common problems and their exact fixes. Find your symptom below.
-
----
-
-### ❌ `ERROR: 42P01: relation "public.profiles" does not exist` when running the SQL
-**Cause:** you ran an old SQL file whose helper functions were declared before the
-tables they use.
-**Fix:** Use **`database/schema.sql` from this ZIP**. It creates every table first,
-then the functions, then the policies — so this error cannot occur. Re-run it; it
-is safe to run more than once. (Do not run `voting-schema.sql` first; the main
-schema already includes voting.)
+Find your exact symptom below and apply the fix. (Every generated ZIP also ships a
+school-specific copy of this file.)
 
 ---
 
-### ❌ `ERROR: 42P16: cannot drop columns from view`
-**Cause:** an OLDER version of a view (e.g. `poll_results` or `report_subject_totals`)
-already exists in your Supabase project, and `CREATE OR REPLACE VIEW` cannot change an
-existing view's columns.
-**Fix:** Use the SQL files **from this ZIP** — they now run `DROP VIEW IF EXISTS … CASCADE`
-before creating each view, so re-running is always safe. (If you prefer, you can also run
-`drop view if exists public.poll_results cascade; drop view if exists public.report_subject_totals cascade;`
-once, then re-run the schema.)
-
-### ❌ `ERROR: column "voter_id" does not exist` (or similar)
-**Cause:** a table from an OLD schema version is missing a column the new security policies
-need (`CREATE TABLE IF NOT EXISTS` does not add columns to existing tables).
-**Fix:** Use the SQL files **from this ZIP** — they include an idempotent
-`ALTER TABLE … ADD COLUMN IF NOT EXISTS` backfill that repairs old tables automatically.
-Just re-run `database/schema.sql`.
+### ❌ `ERROR: 42P01: relation "public.profiles" does not exist` (running the schema)
+**Cause:** an old `schema.sql` declared helper functions before the tables they use.
+**Fix:** run **`database/schema.sql` from this package** — it creates tables first,
+then functions, then policies. It is idempotent (safe to re-run). Verified on
+PostgreSQL 17. Do **not** run `voting-schema.sql` before the main schema; the main
+schema already contains voting.
 
 ---
 
-### ❌ I type my email & password but nothing happens / I am not logged in
-Check each item:
-1. **Did you paste your keys?** Open `assets/js/config.js`. If it still says
-   `YOUR_SUPABASE_URL`, login is disabled — paste your real Project URL and anon key.
-2. **Did you confirm your email?** Supabase sends a confirmation link on sign-up.
-   You cannot log in until you click it (unless you disabled confirmations).
-3. **Is your account approved?** New accounts start as `pending`. An admin must
-   approve you, or run the SQL in Step 7 of the Deployment Guide to approve yourself.
-4. **Open the browser console (F12)** and look for red errors. A "Database not
-   configured" toast means step 1 above.
-
-> Note: in this version the **Sign in** and **Request access** buttons are wired to
-> `App.handleSignIn` / `App.handleSignUp` and the tab switcher to
-> `App.switchAuthTab`, all defined in `assets/js/app.js`. The earlier version
-> referenced functions that did not exist on the generated site, so clicking did
-> nothing — that is fixed here.
+### ❌ `ERROR: 42P01: relation "public.profiles" does not exist` (running the voting query)
+**Cause:** the old voting file assumed `profiles`/`is_staff()` already existed.
+**Fix:** use **`database/voting-schema.sql` from this package** — it is now
+self-contained and creates those dependencies if they are missing. It runs cleanly
+even on a brand-new, empty database.
 
 ---
 
-### ❌ My uploaded school logo does not show (a default badge appears instead)
-**Cause (old version):** pages hard-coded `logo.svg` while your uploaded PNG/JPG was
-saved as `logo.png`/`logo.jpg`, so the `<img>` pointed at a file that did not exist.
-**Fix (this version):** every page now references **`logo.png`** — the exact
-file that was packaged. Your logo file in this ZIP is **`assets/img/logo.png`**.
-To change it later, replace that file (keep the same name) and re-upload.
+### ❌ I enter my email & password but I'm not logged in
+1. **Keys pasted?** Open `assets/js/config.js`. If it still shows
+   `YOUR_SUPABASE_URL`, login is disabled — paste your real URL + anon key.
+2. **Email confirmed?** Click the Supabase confirmation link from sign-up.
+3. **Approved?** New accounts are `pending`. Promote yourself via SQL
+   (`update public.profiles set role='admin', status='approved' where email='...';`).
+4. **Console (F12)** for red errors. "Database not configured" = item 1.
+
+> Fixed in v8: the buttons are wired to `App.handleSignIn` / `App.handleSignUp` and
+> the tabs to `App.switchAuthTab` (all in the shipped `assets/js/app.js`). The old
+> version pointed at functions that didn't exist on the generated site.
 
 ---
 
-### ❌ The voting page shows "Loading polls…" forever
-- Make sure the schema ran (it creates `polls` and `poll_votes`).
-- Make sure you are **logged in** — polls require an authenticated session.
-- Free-tier Supabase has realtime; if a vote tally doesn't auto-update, refresh —
-  the page still works without realtime.
+### ❌ My uploaded logo doesn't show (a default badge appears)
+**Cause (old version):** pages hard-coded `logo.svg` while your upload was packaged
+as `logo.png`/`logo.jpg`.
+**Fix (v8):** every page references the actual packaged file
+(`assets/img/logo.<your-extension>`). To change the logo later, replace that file
+(same name) and re-upload.
 
 ---
 
-### ❌ Push notifications don't appear
-- The user must **install the app** (PWA banner) and click **Enable Push** on the
-  Notifications page, then **Allow** in the browser prompt.
-- iOS requires the app be **added to the Home Screen** first (Safari → Share → Add to Home Screen).
+### ❌ Voting page stuck on "Loading polls…"
+- Confirm the schema ran (creates `polls`/`poll_votes`).
+- You must be **logged in** — polls require a session.
+- If a tally doesn't auto-update, just refresh; it still works without realtime.
 
 ---
 
-### ❌ Page looks unstyled in the in-app preview
-External CSS/fonts may be blocked in a sandboxed preview. The **downloaded/hosted**
-site loads them normally in a real browser.
+### ❌ Push notifications never appear
+- **Install the app** (PWA banner), then on Notifications click **Enable Push** and
+  **Allow** in the browser prompt.
+- iOS: add to Home Screen first (Safari → Share → Add to Home Screen).
 
-Still stuck? Contact HMG Concepts: https://hmgconcepts.pages.dev/
+---
+
+### ❌ The in-app preview looks unstyled
+Sandboxed previews may block external CSS/fonts. The **hosted/downloaded** site
+loads them normally in a real browser.
+
+---
+
+### ❌ GitHub Pages shows a blank page or 404
+- Ensure the empty **`.nojekyll`** file is in the repo root.
+- Ensure `index.html` is at the **root**, and Pages is set to branch `main`, `/ (root)`.
+- For a Modern (Node) build, static hosts should serve the **`public/`** folder.
+
+Still stuck? Contact HMG Concepts — https://hmgconcepts.pages.dev/
