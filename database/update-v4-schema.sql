@@ -180,3 +180,9 @@ begin
 end $$;
 
 select 'School Connect — Update v4 schema installed ✅' as status;
+
+
+-- FINAL CUMULATIVE SUBJECT-TEACHER MAPPING REPAIR
+-- Safe for fresh and existing databases. Fixes: could not find 'teacher' column of subjects.
+alter table if exists public.subjects add column if not exists teacher text;
+alter table if exists public.subjects add column if not exists teacher_id uuid references public.profiles(id) on delete set null;

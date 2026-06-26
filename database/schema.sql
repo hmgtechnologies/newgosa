@@ -981,3 +981,9 @@ group by p.id, p.title;
 --    where email = 'your-email@example.com';
 -- =====================================================================
 select 'School Connect schema v8 installed successfully ✅' as status;
+
+
+-- FINAL CUMULATIVE SUBJECT-TEACHER MAPPING REPAIR
+-- Safe for fresh and existing databases. Fixes: could not find 'teacher' column of subjects.
+alter table if exists public.subjects add column if not exists teacher text;
+alter table if exists public.subjects add column if not exists teacher_id uuid references public.profiles(id) on delete set null;

@@ -341,3 +341,9 @@ create table if not exists public.academic_print_records (
 alter table public.academic_print_records enable row level security;
 drop policy if exists "academic_print_staff" on public.academic_print_records;
 create policy "academic_print_staff" on public.academic_print_records for all using (public.is_staff(auth.uid()));
+
+
+-- FINAL CUMULATIVE SUBJECT-TEACHER MAPPING REPAIR
+-- Safe for fresh and existing databases. Fixes: could not find 'teacher' column of subjects.
+alter table if exists public.subjects add column if not exists teacher text;
+alter table if exists public.subjects add column if not exists teacher_id uuid references public.profiles(id) on delete set null;
